@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: ragflow_server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/api/ragflow_server.py",
+            "cwd": "${workspaceFolder}", // 设置工作目录为项目根目录
+            "console": "integratedTerminal",
+            "env": {
+                "HF_ENDPOINT": "https://hf-mirror.com",
+                "PYTHONPATH": "${workspaceFolder}",
+                "VIRTUAL_ENV": "${workspaceFolder}/.venv",  // 设定虚拟环境路径
+                "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",  // 将虚拟环境的 bin 目录添加到 PATH
+            },
+            "envFile": "${workspaceFolder}/docker/.env",
+            "args": []
+        },
+        {
+            "name": "Python: task_executor",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/rag/svr/task_executor.py",
+            "cwd": "${workspaceFolder}", // 设置工作目录为项目根目录
+            "console": "integratedTerminal",
+            "env": {
+                "HF_ENDPOINT": "https://hf-mirror.com",
+                "PYTHONPATH": "${workspaceFolder}",
+                "VIRTUAL_ENV": "${workspaceFolder}/.venv",  // 设定虚拟环境路径
+                "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",  // 将虚拟环境的 bin 目录添加到 PATH
+                "LD_PRELOAD": "$(pkg-config --variable=libdir jemalloc)/libjemalloc.so",
+            },
+            "envFile": "${workspaceFolder}/docker/.env",
+            "args": []
+        }
+    ]}
