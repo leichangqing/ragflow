@@ -111,7 +111,7 @@ function task_exe() {
 
 if [[ "${ENABLE_WEBSERVER}" -eq 1 ]]; then
     echo "Starting nginx..."
-    /usr/sbin/nginx
+    #/usr/sbin/nginx
 
     echo "Starting ragflow_server..."
     while true; do
