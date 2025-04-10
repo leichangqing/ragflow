@@ -55,7 +55,7 @@ export default {
       nicknamePlaceholder: '請輸入名稱',
       register: '創建賬戶',
       continue: '繼續',
-      title: '開始構建您的智能助手',
+      title: 'WITS知识库智能助手',
       description:
         '免費註冊以探索頂級 RAG 技術。創建知識庫和人工智能來增強您的業務',
       review: '來自 500 多條評論',
