@@ -133,7 +133,9 @@ def update():
     except Exception as e:
         return server_error_response(e)
 
-
+"""
+    画面：点击知识库卡片配置
+"""
 @manager.route('/detail', methods=['GET'])  # noqa: F821
 @login_required
 def detail():
@@ -284,7 +286,9 @@ def rename_tags(kb_id):
                                      kb_id)
     return get_json_result(data=True)
 
-
+    """
+    画面：点击知识库卡片时查看明细
+    """
 @manager.route('/<kb_id>/knowledge_graph', methods=['GET'])  # noqa: F821
 @login_required
 def knowledge_graph(kb_id):

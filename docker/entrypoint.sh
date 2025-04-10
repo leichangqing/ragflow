@@ -97,10 +97,11 @@ PY=python3
 function task_exe() {
     local consumer_id="$1"
     local host_id="$2"
-
-    JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.so"
+    JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.2.dylib"
+    #JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.so"
     while true; do
-        LD_PRELOAD="$JEMALLOC_PATH" \
+        #LD_PRELOAD="$JEMALLOC_PATH" \
+        DYLD_INSERT_LIBRARIES "$JEMALLOC_PATH" \
         "$PY" rag/svr/task_executor.py "${host_id}_${consumer_id}"
     done
 }

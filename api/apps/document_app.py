@@ -48,7 +48,9 @@ from api.utils.file_utils import filename_type, thumbnail, get_project_base_dire
 from api.utils.web_utils import html2pdf, is_valid_url
 from api.constants import IMG_BASE64_PREFIX
 
-
+"""
+    画面：上传文件。
+"""
 @manager.route('/upload', methods=['POST'])  # noqa: F821
 @login_required
 @validate_request("kb_id")
@@ -287,7 +289,7 @@ def change_status():
 
         status = int(req["status"])
         settings.docStoreConn.update({"doc_id": req["doc_id"]}, {"available_int": status},
-                                     search.index_name(kb.tenant_id), doc.kb_id)
+                                    search.index_name(kb.tenant_id), doc.kb_id)
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
@@ -343,7 +345,9 @@ def rm():
 
     return get_json_result(data=True)
 
-
+"""
+    画面：点击转换按钮，运行文档处理函数。
+"""
 @manager.route('/run', methods=['POST'])  # noqa: F821
 @login_required
 @validate_request("doc_ids", "run")
