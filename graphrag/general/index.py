@@ -37,6 +37,12 @@ from graphrag.utils import (
 from rag.nlp import rag_tokenizer, search
 from rag.utils.redis_conn import RedisDistributedLock
 
+# 知识图谱抽取入口
+# 方法主要是暴露给task_executor用于抽取知识图谱
+# client->graphrag->Extractor->NetworkX->ElasticSearch->EntityResolution->CommunityReportsExtractor
+# • knowledge_graph_kwd="subgraph": 标识该数据为子图类型
+# • docStoreConn: RAGFlow封装的文档客户端，这个在api模块中说了
+# • search.index_name(tenant_id): 动态生成索引名（格式如ragflow_{tenant_id}
 
 async def run_graphrag(
     row: dict,
@@ -54,7 +60,8 @@ async def run_graphrag(
         doc_id, tenant_id, [kb_id], fields=["content_with_weight", "doc_id"]
     ):
         chunks.append(d["content_with_weight"])
-
+        
+    # 生成子图后存储到ES
     subgraph = await generate_subgraph(
         LightKGExt
         if row["kb_parser_config"]["graphrag"]["method"] != "general"
@@ -122,7 +129,7 @@ async def run_graphrag(
     callback(msg=f"GraphRAG for doc {doc_id} done in {now - start:.2f} seconds.")
     return
 
-
+# 生成子图
 async def generate_subgraph(
     extractor: Extractor,
     tenant_id: str,
@@ -172,8 +179,8 @@ async def generate_subgraph(
     chunk = {
         "content_with_weight": json.dumps(
             nx.node_link_data(subgraph, edges="edges"), ensure_ascii=False
-        ),
-        "knowledge_graph_kwd": "subgraph",
+        ), # 将NetworkX图序列化为JSON
+        "knowledge_graph_kwd": "subgraph",# ES索引标识
         "kb_id": kb_id,
         "source_id": [doc_id],
         "available_int": 0,
@@ -185,6 +192,7 @@ async def generate_subgraph(
             {"knowledge_graph_kwd": "subgraph", "source_id": doc_id}, search.index_name(tenant_id), kb_id
         )
     )
+    # 写入ES的核心操作
     await trio.to_thread.run_sync(
         lambda: settings.docStoreConn.insert(
             [{"id": cid, **chunk}], search.index_name(tenant_id), kb_id
@@ -193,6 +201,8 @@ async def generate_subgraph(
     now = trio.current_time()
     callback(msg=f"generated subgraph for doc {doc_id} in {now - start:.2f} seconds.")
     return subgraph
+
+# 合并到全局图谱
 
 async def merge_subgraph(
     tenant_id: str,
@@ -249,6 +259,7 @@ async def resolve_entities(
     now = trio.current_time()
     callback(msg=f"Graph resolution done in {now - start:.2f}s.")
 
+# 实体消歧和社区发现后，最终存储社区报告到ES
 
 async def extract_community(
     graph,

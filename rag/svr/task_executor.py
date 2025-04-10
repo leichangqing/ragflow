@@ -38,7 +38,7 @@ from timeit import default_timer as timer
 import tracemalloc
 import signal
 import trio
-import exceptiongroup
+#import exceptiongroup
 import faulthandler
 
 import numpy as np
@@ -608,7 +608,7 @@ async def handle_task():
         CURRENT_TASKS.pop(task["id"], None)
         try:
             err_msg = str(e)
-            while isinstance(e, exceptiongroup.ExceptionGroup):
+            while isinstance(e, BaseExceptionGroup.ExceptionGroup):
                 e = e.exceptions[0]
                 err_msg += ' -- ' + str(e)
             set_progress(task["id"], prog=-1, msg=f"[Exception]: {err_msg}")
