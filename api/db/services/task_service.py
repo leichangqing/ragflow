@@ -373,7 +373,7 @@ def queue_tasks(doc: dict, bucket: str, name: str, priority: int):
                 chunk_ids.extend(task["chunk_ids"].split())
         if chunk_ids:
             settings.docStoreConn.delete({"id": chunk_ids}, search.index_name(chunking_config["tenant_id"]),
-                                         chunking_config["kb_id"])
+                                            chunking_config["kb_id"])
     DocumentService.update_by_id(doc["id"], {"chunk_num": ck_num})
 
     bulk_insert_into_db(Task, parse_task_array, True)

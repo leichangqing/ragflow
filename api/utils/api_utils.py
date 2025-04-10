@@ -97,7 +97,7 @@ def get_exponential_backoff_interval(retries, full_jitter=False):
 
 
 def get_data_error_result(code=settings.RetCode.DATA_ERROR,
-                          message='Sorry! Data missing!'):
+                        message='Sorry! Data missing!'):
     logging.exception(Exception(message))
     result_dict = {
         "code": code,
@@ -123,7 +123,7 @@ def server_error_response(e):
             code=settings.RetCode.EXCEPTION_ERROR, message=repr(e.args[0]), data=e.args[1])
     if repr(e).find("index_not_found_exception") >= 0:
         return get_json_result(code=settings.RetCode.EXCEPTION_ERROR,
-                               message="No chunk found, please upload file and parse it.")
+                            message="No chunk found, please upload file and parse it.")
 
     return get_json_result(code=settings.RetCode.EXCEPTION_ERROR, message=repr(e))
 
@@ -234,7 +234,7 @@ def build_error_result(code=settings.RetCode.FORBIDDEN, message='success'):
 
 
 def construct_response(code=settings.RetCode.SUCCESS,
-                       message='success', data=None, auth=None):
+                    message='success', data=None, auth=None):
     result_dict = {"code": code, "message": message, "data": data}
     response_dict = {}
     for key, value in result_dict.items():
@@ -317,7 +317,7 @@ def get_result(code=settings.RetCode.SUCCESS, message="", data=None):
 
 
 def get_error_data_result(message='Sorry! Data missing!', code=settings.RetCode.DATA_ERROR,
-                          ):
+                        ):
     result_dict = {
         "code": code,
         "message": message}

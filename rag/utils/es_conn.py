@@ -97,8 +97,8 @@ class ESConnection(DocStoreConnection):
         try:
             from elasticsearch.client import IndicesClient
             return IndicesClient(self.es).create(index=indexName,
-                                                 settings=self.mapping["settings"],
-                                                 mappings=self.mapping["mappings"])
+                                        settings=self.mapping["settings"],
+                                        mappings=self.mapping["mappings"])
         except Exception:
             logger.exception("ESConnection.createIndex error %s" % (indexName))
 
@@ -185,9 +185,9 @@ class ESConnection(DocStoreConnection):
                 if isinstance(minimum_should_match, float):
                     minimum_should_match = str(int(minimum_should_match * 100)) + "%"
                 bqry.must.append(Q("query_string", fields=m.fields,
-                                   type="best_fields", query=m.matching_text,
-                                   minimum_should_match=minimum_should_match,
-                                   boost=1))
+                            type="best_fields", query=m.matching_text,
+                            minimum_should_match=minimum_should_match,
+                            boost=1))
                 bqry.boost = 1.0 - vector_similarity_weight
 
             elif isinstance(m, MatchDenseExpr):
@@ -196,12 +196,12 @@ class ESConnection(DocStoreConnection):
                 if "similarity" in m.extra_options:
                     similarity = m.extra_options["similarity"]
                 s = s.knn(m.vector_column_name,
-                          m.topn,
-                          m.topn * 2,
-                          query_vector=list(m.embedding_data),
-                          filter=bqry.to_dict(),
-                          similarity=similarity,
-                          )
+                        m.topn,
+                        m.topn * 2,
+                        query_vector=list(m.embedding_data),
+                        filter=bqry.to_dict(),
+                        similarity=similarity,
+                        )
 
         if bqry and rank_feature:
             for fld, sc in rank_feature.items():
@@ -220,7 +220,7 @@ class ESConnection(DocStoreConnection):
                 order = "asc" if order == 0 else "desc"
                 if field in ["page_num_int", "top_int"]:
                     order_info = {"order": order, "unmapped_type": "float",
-                                  "mode": "avg", "numeric_type": "double"}
+                        "mode": "avg", "numeric_type": "double"}
                 elif field.endswith("_int") or field.endswith("_flt"):
                     order_info = {"order": order, "unmapped_type": "float"}
                 else:
@@ -240,11 +240,11 @@ class ESConnection(DocStoreConnection):
             try:
                 #print(json.dumps(q, ensure_ascii=False))
                 res = self.es.search(index=indexNames,
-                                     body=q,
-                                     timeout="600s",
-                                     # search_type="dfs_query_then_fetch",
-                                     track_total_hits=True,
-                                     _source=True)
+                                    body=q,
+                                    timeout="600s",
+                                    # search_type="dfs_query_then_fetch",
+                                    track_total_hits=True,
+                                    _source=True)
                 if str(res.get("timed_out", "")).lower() == "true":
                     raise Exception("Es Timeout.")
                 logger.debug(f"ESConnection.search {str(indexNames)} res: " + str(res))
@@ -261,7 +261,7 @@ class ESConnection(DocStoreConnection):
         for i in range(ATTEMPT_TIME):
             try:
                 res = self.es.get(index=(indexName),
-                                  id=chunkId, source=True, )
+                                id=chunkId, source=True, )
                 if str(res.get("timed_out", "")).lower() == "true":
                     raise Exception("Es Timeout.")
                 chunk = res["_source"]
@@ -295,7 +295,7 @@ class ESConnection(DocStoreConnection):
             try:
                 res = []
                 r = self.es.bulk(index=(indexName), operations=operations,
-                                 refresh=False, timeout="60s")
+                                refresh=False, timeout="60s")
                 if re.search(r"False", str(r["errors"]), re.IGNORECASE):
                     return res
 
@@ -509,7 +509,7 @@ class ESConnection(DocStoreConnection):
             for t in re.split(r"[.?!;\n]", txt):
                 for w in keywords:
                     t = re.sub(r"(^|[ .?/'\"\(\)!,:;-])(%s)([ .?/'\"\(\)!,:;-])" % re.escape(w), r"\1<em>\2</em>\3", t,
-                               flags=re.IGNORECASE | re.MULTILINE)
+                            flags=re.IGNORECASE | re.MULTILINE)
                 if not re.search(r"<em>[^<>]+</em>", t, flags=re.IGNORECASE | re.MULTILINE):
                     continue
                 txts.append(t)
@@ -527,7 +527,6 @@ class ESConnection(DocStoreConnection):
     """
     SQL
     """
-
     def sql(self, sql: str, fetch_size: int, format: str):
         logger.debug(f"ESConnection.sql get sql: {sql}")
         sql = re.sub(r"[ `]+", " ", sql)
@@ -542,7 +541,7 @@ class ESConnection(DocStoreConnection):
                     r.group(1),
                     r.group(2),
                     r.group(3)),
-                 match))
+                match))
 
         for p, r in replaces:
             sql = sql.replace(p, r, 1)
