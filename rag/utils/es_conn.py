@@ -61,7 +61,7 @@ class ESConnection(DocStoreConnection):
             msg = f"Elasticsearch {settings.ES['hosts']} is unhealthy in 120s."
             logger.error(msg)
             raise Exception(msg)
-        v = self.info.get("version", {"number": "8.11.3"})
+        v = self.info.get("version", {"number": "8.17.4"})
         v = v["number"].split(".")[0]
         if int(v) < 8:
             msg = f"Elasticsearch version must be greater than or equal to 8, current version: {v}"

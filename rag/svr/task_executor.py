@@ -38,7 +38,7 @@ from timeit import default_timer as timer
 import tracemalloc
 import signal
 import trio
-#import exceptiongroup
+#import exceptiongroup # python3.12 has the lib
 import faulthandler
 
 import numpy as np
@@ -100,7 +100,7 @@ MAX_CONCURRENT_CHUNK_BUILDERS = int(os.environ.get('MAX_CONCURRENT_CHUNK_BUILDER
 task_limiter = trio.CapacityLimiter(MAX_CONCURRENT_TASKS)
 chunk_limiter = trio.CapacityLimiter(MAX_CONCURRENT_CHUNK_BUILDERS)
 
-
+# 内存追踪
 # SIGUSR1 handler: start tracemalloc and take snapshot
 def start_tracemalloc_and_snapshot(signum, frame):
     if not tracemalloc.is_tracing():
@@ -113,7 +113,7 @@ def start_tracemalloc_and_snapshot(signum, frame):
     snapshot_file = f"snapshot_{timestamp}.trace"
     snapshot_file = os.path.abspath(os.path.join(get_project_base_directory(), "logs", f"{os.getpid()}_snapshot_{timestamp}.trace"))
 
-    snapshot = tracemalloc.take_snapshot()
+    snapshot = tracemalloc.take_snapshot() #内存快照
     snapshot.dump(snapshot_file)
     current, peak = tracemalloc.get_traced_memory()
     if sys.platform == "win32":
@@ -137,7 +137,11 @@ class TaskCanceledException(Exception):
     def __init__(self, msg):
         self.msg = msg
 
-
+# 检查任务是否被取消。
+# 更新任务的进度信息。
+# 记录任务的进度和状态。
+# 在任务被取消时抛出异常。
+# 通过这种方式，set_progress 函数可以有效地管理任务的进度更新，并处理各种异常情况
 def set_progress(task_id, from_page=0, to_page=-1, prog=None, msg="Processing..."):
     try:
         if prog is not None and prog < 0:
@@ -217,7 +221,7 @@ async def get_storage_binary(bucket, name):
 async def build_chunks(task, progress_callback):
     if task["size"] > DOC_MAXIMUM_SIZE:
         set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" %
-                                              (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
+                                            (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
         return []
 
     chunker = FACTORY[task["parser_id"].lower()]
@@ -466,7 +470,8 @@ async def run_raptor(row, chat_mdl, embd_mdl, vector_size, callback=None):
         tk_count += num_tokens_from_string(content)
     return res, tk_count
 
-
+# Task执行的具体处理函数
+# 写入elasticsearch的索引
 async def do_handle_task(task):
     task_id = task["id"]
     task_from_page = task["from_page"]
@@ -482,6 +487,7 @@ async def do_handle_task(task):
     task_start_ts = timer()
 
     # prepare the progress callback function
+    # 等价于调用set_progress()，并补充几个参数
     progress_callback = partial(set_progress, task_id, task_from_page, task_to_page)
 
     # FIXME: workaround, Infinity doesn't support table parsing method, this check is to notify user
@@ -576,8 +582,8 @@ async def do_handle_task(task):
             doc_store_result = await trio.to_thread.run_sync(lambda: settings.docStoreConn.delete({"id": chunk_ids}, search.index_name(task_tenant_id), task_dataset_id))
             return
     logging.info("Indexing doc({}), page({}-{}), chunks({}), elapsed: {:.2f}".format(task_document_name, task_from_page,
-                                                                                     task_to_page, len(chunks),
-                                                                                     timer() - start_ts))
+                                                                                    task_to_page, len(chunks),
+                                                                                    timer() - start_ts))
 
     DocumentService.increment_chunk_num(task_doc_id, task_dataset_id, token_count, chunk_count, 0)
 
@@ -586,8 +592,8 @@ async def do_handle_task(task):
     progress_callback(prog=1.0, msg="Indexing done ({:.2f}s). Task done ({:.2f}s)".format(time_cost, task_time_cost))
     logging.info(
         "Chunk doc({}), page({}-{}), chunks({}), token({}), elapsed:{:.2f}".format(task_document_name, task_from_page,
-                                                                                   task_to_page, len(chunks),
-                                                                                   token_count, task_time_cost))
+                                                                                task_to_page, len(chunks),
+                                                                                token_count, task_time_cost))
 
 
 async def handle_task():

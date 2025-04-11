@@ -104,13 +104,13 @@ class DocumentService(CommonService):
         try:
             settings.docStoreConn.delete({"doc_id": doc.id}, search.index_name(tenant_id), doc.kb_id)
             settings.docStoreConn.update({"kb_id": doc.kb_id, "knowledge_graph_kwd": ["entity", "relation", "graph", "subgraph", "community_report"], "source_id": doc.id},
-                                         {"remove": {"source_id": doc.id}},
-                                         search.index_name(tenant_id), doc.kb_id)
+                                        {"remove": {"source_id": doc.id}},
+                                        search.index_name(tenant_id), doc.kb_id)
             settings.docStoreConn.update({"kb_id": doc.kb_id, "knowledge_graph_kwd": ["graph"]},
-                                         {"removed_kwd": "Y"},
-                                         search.index_name(tenant_id), doc.kb_id)
+                                        {"removed_kwd": "Y"},
+                                        search.index_name(tenant_id), doc.kb_id)
             settings.docStoreConn.delete({"kb_id": doc.kb_id, "knowledge_graph_kwd": ["entity", "relation", "graph", "subgraph", "community_report"], "must_not": {"exists": "source_id"}},
-                                         search.index_name(tenant_id), doc.kb_id)
+                                        search.index_name(tenant_id), doc.kb_id)
         except Exception:
             pass
         return cls.delete_by_id(doc.id)
