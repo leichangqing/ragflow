@@ -116,11 +116,11 @@ def update():
         if kb.pagerank != req.get("pagerank", 0):
             if req.get("pagerank", 0) > 0:
                 settings.docStoreConn.update({"kb_id": kb.id}, {PAGERANK_FLD: req["pagerank"]},
-                                         search.index_name(kb.tenant_id), kb.id)
+                                        search.index_name(kb.tenant_id), kb.id)
             else:
                 # Elasticsearch requires PAGERANK_FLD be non-zero!
                 settings.docStoreConn.update({"exists": PAGERANK_FLD}, {"remove": PAGERANK_FLD},
-                                         search.index_name(kb.tenant_id), kb.id)
+                                        search.index_name(kb.tenant_id), kb.id)
 
         e, kb = KnowledgebaseService.get_by_id(kb.id)
         if not e:

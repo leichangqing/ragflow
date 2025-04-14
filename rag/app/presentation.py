@@ -61,7 +61,7 @@ class Pdf(PdfParser):
         return False
 
     def __call__(self, filename, binary=None, from_page=0,
-                 to_page=100000, zoomin=3, callback=None):
+                to_page=100000, zoomin=3, callback=None):
         from timeit import default_timer as timer
         start = timer()
         callback(msg="OCR started")
@@ -73,7 +73,7 @@ class Pdf(PdfParser):
         res = []
         for i in range(len(self.boxes)):
             lines = "\n".join([b["text"] for b in self.boxes[i]
-                              if not self.__garbage(b["text"])])
+                            if not self.__garbage(b["text"])])
             res.append((lines, self.page_images[i]))
         callback(0.9, "Page {}~{}: Parsing finished".format(
             from_page, min(to_page, self.total_page)))
@@ -123,7 +123,7 @@ def chunk(filename, binary=None, from_page=0, to_page=100000,
         if kwargs.get("layout_recognize", "DeepDOC") == "Plain Text":
             pdf_parser = PlainParser()
         for pn, (txt, img) in enumerate(pdf_parser(filename, binary,
-                                                   from_page=from_page, to_page=to_page, callback=callback)):
+                                                from_page=from_page, to_page=to_page, callback=callback)):
             d = copy.deepcopy(doc)
             pn += from_page
             if img:
