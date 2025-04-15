@@ -293,8 +293,8 @@ def change_status():
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
-
-
+    
+# 删除文档
 @manager.route('/rm', methods=['POST'])  # noqa: F821
 @login_required
 @validate_request("doc_id")
@@ -486,8 +486,8 @@ def change_parser():
             return get_data_error_result(message="Not supported yet!")
 
         e = DocumentService.update_by_id(doc.id,
-                                         {"parser_id": req["parser_id"], "progress": 0, "progress_msg": "",
-                                          "run": TaskStatus.UNSTART.value})
+                                        {"parser_id": req["parser_id"], "progress": 0, "progress_msg": "",
+                                        "run": TaskStatus.UNSTART.value})
         if not e:
             return get_data_error_result(message="Document not found!")
         if "parser_config" in req:
