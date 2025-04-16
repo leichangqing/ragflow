@@ -1,39 +1,42 @@
 services:
   es01:
-    container_name: ragflow-es-01
-    profiles:
-      - elasticsearch
-    image: elasticsearch:${STACK_VERSION}
-    volumes:
-      - esdata01:/usr/share/elasticsearch/data
-    ports:
-      - ${ES_PORT}:9200
-    env_file: .env
+    image: elasticsearch:8.17.4
+    container_name: ragflow-es-01 
     environment:
       - node.name=es01
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - bootstrap.memory_lock=false
+#      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - discovery.type=single-node
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=false
-      - xpack.security.transport.ssl.enabled=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.audit.enabled=true
       - cluster.routing.allocation.disk.watermark.low=5gb
       - cluster.routing.allocation.disk.watermark.high=3gb
       - cluster.routing.allocation.disk.watermark.flood_stage=2gb
       - TZ=${TIMEZONE}
-    mem_limit: ${MEM_LIMIT}
     ulimits:
       memlock:
         soft: -1
         hard: -1
-    healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:9200"]
-      interval: 10s
-      timeout: 10s
-      retries: 120
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data  
+    ports:
+      - ${ES_PORT}:9200
     networks:
       - ragflow
-    restart: on-failure
+
+  kibana:
+    image: kibana:8.17.4
+    container_name: ragflow-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+  #    - ELASTICSEARCH_USERNAME=elastic
+#      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - ${KIBANA_PORT}:5601
+    networks:
+      - ragflow 
+    depends_on:
+      - es01
 
   infinity:
     container_name: ragflow-infinity
@@ -64,7 +67,6 @@ services:
       timeout: 10s
       retries: 120
     restart: on-failure
-
 
   mysql:
     # mysql:5.7 linux/arm64 image is unavailable.
@@ -127,8 +129,6 @@ services:
     networks:
       - ragflow
     restart: on-failure
-
-
 
 volumes:
   esdata01:
