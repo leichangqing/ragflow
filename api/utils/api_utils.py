@@ -96,7 +96,6 @@ def get_exponential_backoff_interval(retries, full_jitter=False):
     # Adjust according to maximum wait time and account for negative values.
     return max(0, countdown)
 
-
 def get_data_error_result(code=settings.RetCode.DATA_ERROR, message="Sorry! Data missing!"):
     logging.exception(Exception(message))
     result_dict = {"code": code, "message": message}
@@ -307,7 +306,6 @@ def get_result(code=settings.RetCode.SUCCESS, message="", data=None):
         response = {"code": code, "message": message}
     return jsonify(response)
 
-
 def get_error_data_result(
     message="Sorry! Data missing!",
     code=settings.RetCode.DATA_ERROR,
@@ -378,7 +376,6 @@ def get_data_openai(id=None,
                     object="chat.completion",
                     param=None,
 ):
-   
     total_tokens= prompt_tokens + completion_tokens
     return {
         "id":f"{id}",

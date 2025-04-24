@@ -10,7 +10,6 @@ function usage() {
     echo
     echo "  --disable-webserver             Disables the web server (nginx + ragflow_server)."
     echo "  --disable-taskexecutor          Disables task executor workers."
-    echo "  --enable-mcpserver              Enables the MCP server."
     echo "  --consumer-no-beg=<num>         Start range for consumers (if using range-based)."
     echo "  --consumer-no-end=<num>         End range for consumers (if using range-based)."
     echo "  --workers=<num>                 Number of task executors to run (if range is not used)."
@@ -20,23 +19,14 @@ function usage() {
     echo "  $0 --disable-taskexecutor"
     echo "  $0 --disable-webserver --consumer-no-beg=0 --consumer-no-end=5"
     echo "  $0 --disable-webserver --workers=2 --host-id=myhost123"
-    echo "  $0 --enable-mcpserver"
     exit 1
 }
 
 ENABLE_WEBSERVER=1 # Default to enable web server
 ENABLE_TASKEXECUTOR=1  # Default to enable task executor
-ENABLE_MCP_SERVER=0
 CONSUMER_NO_BEG=0
 CONSUMER_NO_END=0
 WORKERS=1
-
-MCP_HOST="127.0.0.1"
-MCP_PORT=9382
-MCP_BASE_URL="http://127.0.0.1:9380"
-MCP_SCRIPT_PATH="/ragflow/mcp/server/server.py"
-MCP_MODE="self-host"
-MCP_HOST_API_KEY=""
 
 # -----------------------------------------------------------------------------
 # Host ID logic:
@@ -61,34 +51,6 @@ for arg in "$@"; do
       ;;
     --disable-taskexecutor)
       ENABLE_TASKEXECUTOR=0
-      shift
-      ;;
-    --enable-mcpserver)
-      ENABLE_MCP_SERVER=1
-      shift
-      ;;
-    --mcp-host=*)
-      MCP_HOST="${arg#*=}"
-      shift
-      ;;
-    --mcp-port=*)
-      MCP_PORT="${arg#*=}"
-      shift
-      ;;
-    --mcp-base-url=*)
-      MCP_BASE_URL="${arg#*=}"
-      shift
-      ;;
-    --mcp-mode=*)
-      MCP_MODE="${arg#*=}"
-      shift
-      ;;
-    --mcp-host-api-key=*)
-      MCP_HOST_API_KEY="${arg#*=}"
-      shift
-      ;;
-    --mcp-script-path=*)
-      MCP_SCRIPT_PATH="${arg#*=}"
       shift
       ;;
     --consumer-no-beg=*)
@@ -135,28 +97,12 @@ PY=python3
 function task_exe() {
     local consumer_id="$1"
     local host_id="$2"
-    # for mac
-    #JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.2.dylib"
-    # for linux
+
     JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.so"
     while true; do
-    	  # for mac
-    		#DYLD_INSERT_LIBRARIES "$JEMALLOC_PATH" \
-        # for linux
         LD_PRELOAD="$JEMALLOC_PATH" \
-        
         "$PY" rag/svr/task_executor.py "${host_id}_${consumer_id}"
     done
-}
-
-function start_mcp_server() {
-    echo "Starting MCP Server on ${MCP_HOST}:${MCP_PORT} with base URL ${MCP_BASE_URL}..."
-    "$PY" "${MCP_SCRIPT_PATH}" \
-        --host="${MCP_HOST}" \
-        --port="${MCP_PORT}" \
-        --base_url="${MCP_BASE_URL}" \
-        --mode="${MCP_MODE}" \
-        --api_key="${MCP_HOST_API_KEY}" &
 }
 
 # -----------------------------------------------------------------------------
@@ -171,11 +117,6 @@ if [[ "${ENABLE_WEBSERVER}" -eq 1 ]]; then
     while true; do
         "$PY" api/ragflow_server.py
     done &
-fi
-
-
-if [[ "${ENABLE_MCP_SERVER}" -eq 1 ]]; then
-    start_mcp_server
 fi
 
 if [[ "${ENABLE_TASKEXECUTOR}" -eq 1 ]]; then

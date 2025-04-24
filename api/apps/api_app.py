@@ -58,11 +58,11 @@ def new_token():
 
         tenant_id = tenants[0].tenant_id
         obj = {"tenant_id": tenant_id, "token": generate_confirmation_token(tenant_id),
-               "create_time": current_timestamp(),
-               "create_date": datetime_format(datetime.now()),
-               "update_time": None,
-               "update_date": None
-               }
+            "create_time": current_timestamp(),
+            "create_date": datetime_format(datetime.now()),
+            "update_time": None,
+            "update_date": None
+            }
         if req.get("canvas_id"):
             obj["dialog_id"] = req["canvas_id"]
             obj["source"] = "agent"
@@ -118,8 +118,8 @@ def stats():
             request.args.get(
                 "from_date",
                 (datetime.now() -
-                 timedelta(
-                     days=7)).strftime("%Y-%m-%d 00:00:00")),
+                timedelta(
+                    days=7)).strftime("%Y-%m-%d 00:00:00")),
             request.args.get(
                 "to_date",
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
@@ -261,7 +261,7 @@ def completion():
                             fillin_conv(ans)
                             rename_field(ans)
                             yield "data:" + json.dumps({"code": 0, "message": "", "data": ans},
-                                                       ensure_ascii=False) + "\n\n"
+                                                    ensure_ascii=False) + "\n\n"
 
                         canvas.messages.append({"role": "assistant", "content": final_ans["content"], "id": message_id})
                         canvas.history.append(("assistant", final_ans["content"]))
@@ -272,7 +272,7 @@ def completion():
                     except Exception as e:
                         yield "data:" + json.dumps({"code": 500, "message": str(e),
                                                     "data": {"answer": "**ERROR**: " + str(e), "reference": []}},
-                                                   ensure_ascii=False) + "\n\n"
+                                                ensure_ascii=False) + "\n\n"
                     yield "data:" + json.dumps({"code": 0, "message": "", "data": True}, ensure_ascii=False) + "\n\n"
 
                 resp = Response(sse(), mimetype="text/event-stream")
@@ -314,12 +314,12 @@ def completion():
                     fillin_conv(ans)
                     rename_field(ans)
                     yield "data:" + json.dumps({"code": 0, "message": "", "data": ans},
-                                               ensure_ascii=False) + "\n\n"
+                                            ensure_ascii=False) + "\n\n"
                 API4ConversationService.append_message(conv.id, conv.to_dict())
             except Exception as e:
                 yield "data:" + json.dumps({"code": 500, "message": str(e),
                                             "data": {"answer": "**ERROR**: " + str(e), "reference": []}},
-                                           ensure_ascii=False) + "\n\n"
+                                        ensure_ascii=False) + "\n\n"
             yield "data:" + json.dumps({"code": 0, "message": "", "data": True}, ensure_ascii=False) + "\n\n"
 
         if req.get("stream", True):
@@ -360,7 +360,7 @@ def get(conversation_id):
         conv = conv.to_dict()
         if token != APIToken.query(dialog_id=conv['dialog_id'])[0].token:
             return get_json_result(data=False, message='Authentication error: API key is invalid for this conversation_id!"',
-                                   code=settings.RetCode.AUTHENTICATION_ERROR)
+                                code=settings.RetCode.AUTHENTICATION_ERROR)
 
         for referenct_i in conv['reference']:
             if referenct_i is None or len(referenct_i) == 0:
@@ -845,11 +845,12 @@ def retrieval():
                                                similarity_threshold, vector_similarity_weight, top,
                                                doc_ids, rerank_mdl=rerank_mdl, highlight= highlight,
                                                rank_feature=label_question(question, kbs))
+
         for c in ranks["chunks"]:
             c.pop("vector", None)
         return get_json_result(data=ranks)
     except Exception as e:
         if str(e).find("not_found") > 0:
             return get_json_result(data=False, message='No chunk found! Check the chunk status please!',
-                                   code=settings.RetCode.DATA_ERROR)
+                                code=settings.RetCode.DATA_ERROR)
         return server_error_response(e)

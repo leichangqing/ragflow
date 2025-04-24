@@ -19,6 +19,23 @@
       "lat_lon": {
         "type": "geo_point",
         "store": "true"
+      },
+      "permissions": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "keyword"
+          },
+          "department": {
+            "type": "keyword"
+          },
+          "customer": {
+            "type": "keyword"
+          },
+          "customer_department": {
+            "type": "keyword"
+          }
+        }
       }
     },
     "date_detection": "true",
