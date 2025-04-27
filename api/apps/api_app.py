@@ -822,6 +822,7 @@ def retrieval():
     similarity_threshold = float(req.get("similarity_threshold", 0.2))
     vector_similarity_weight = float(req.get("vector_similarity_weight", 0.3))
     top = int(req.get("top_k", 1024))
+    highlight = bool(req.get("highlight", False)) 
 
     try:
         kbs = KnowledgebaseService.get_by_ids(kb_ids)
@@ -841,9 +842,9 @@ def retrieval():
             chat_mdl = TenantLLMService.model_instance(kbs[0].tenant_id, LLMType.CHAT)
             question += keyword_extraction(chat_mdl, question)
         ranks = settings.retrievaler.retrieval(question, embd_mdl, kbs[0].tenant_id, kb_ids, page, size,
-                                            similarity_threshold, vector_similarity_weight, top,
-                                            doc_ids, rerank_mdl=rerank_mdl,
-                                            rank_feature=label_question(question, kbs))
+                                               similarity_threshold, vector_similarity_weight, top,
+                                               doc_ids, rerank_mdl=rerank_mdl, highlight= highlight,
+                                               rank_feature=label_question(question, kbs))
         for c in ranks["chunks"]:
             c.pop("vector", None)
         return get_json_result(data=ranks)
