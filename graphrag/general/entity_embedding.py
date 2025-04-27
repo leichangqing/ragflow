@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from graphrag.general.leiden import stable_largest_connected_component
 import graspologic as gc
 
-
+# 解决知识图谱中 同一实体多表述 的问题（如"苹果公司" vs "Apple Inc."），确保图谱中每个真实世界实体仅对应唯一节点。
+# 该模块是构建高质量知识图谱的核心组件，通过语义理解与图结构分析的结合，显著提升图谱的准确性和一致性
 @dataclass
 class NodeEmbeddings:
     """Node embeddings class definition."""

@@ -29,6 +29,11 @@ from rag.utils.doc_store_conn import OrderByExpr
 
 from rag.nlp.search import Dealer, index_name
 
+# 提供给内部的直接查询知识图谱的方法，核心概流程如下
+# User： retrieval(question, kb_ids)
+# KGSearch： query_rewrite(question)
+# LLM：
+# ElasticSearch
 
 class KGSearch(Dealer):
     def _chat(self, llm_bdl, system, history, gen_conf):

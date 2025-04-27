@@ -40,7 +40,7 @@ from timeit import default_timer as timer
 import tracemalloc
 import signal
 import trio
-import exceptiongroup
+#import exceptiongroup # python3.12 has the lib
 import faulthandler
 
 import numpy as np
@@ -111,7 +111,7 @@ def signal_handler(sig, frame):
     time.sleep(1)
     sys.exit(0)
 
-
+# 内存追踪
 # SIGUSR1 handler: start tracemalloc and take snapshot
 def start_tracemalloc_and_snapshot(signum, frame):
     if not tracemalloc.is_tracing():
@@ -124,7 +124,7 @@ def start_tracemalloc_and_snapshot(signum, frame):
     snapshot_file = f"snapshot_{timestamp}.trace"
     snapshot_file = os.path.abspath(os.path.join(get_project_base_directory(), "logs", f"{os.getpid()}_snapshot_{timestamp}.trace"))
 
-    snapshot = tracemalloc.take_snapshot()
+    snapshot = tracemalloc.take_snapshot() #内存快照
     snapshot.dump(snapshot_file)
     current, peak = tracemalloc.get_traced_memory()
     if sys.platform == "win32":
@@ -148,7 +148,11 @@ class TaskCanceledException(Exception):
     def __init__(self, msg):
         self.msg = msg
 
-
+# 检查任务是否被取消。
+# 更新任务的进度信息。
+# 记录任务的进度和状态。
+# 在任务被取消时抛出异常。
+# 通过这种方式,  set_progress 函数可以有效地管理任务的进度更新,  并处理各种异常情况
 def set_progress(task_id, from_page=0, to_page=-1, prog=None, msg="Processing..."):
     try:
         if prog is not None and prog < 0:
@@ -179,7 +183,13 @@ def set_progress(task_id, from_page=0, to_page=-1, prog=None, msg="Processing...
         logging.warning(f"set_progress({task_id}) got exception DoesNotExist")
     except Exception:
         logging.exception(f"set_progress({task_id}), progress: {prog}, progress_msg: {msg}, got exception")
-
+    
+"""
+从 Redis 消息队列中获取任务。
+如果没有获取到消息或消息内容为空,  返回 (None, None)。
+如果任务不存在或已被取消,  更新失败任务计数器并确认消息。
+如果任务有效,  返回获取到的消息和任务信息。
+"""
 async def collect():
     global CONSUMER_NAME, DONE_TASKS, FAILED_TASKS
     global UNACKED_ITERATOR
@@ -224,16 +234,20 @@ async def collect():
 async def get_storage_binary(bucket, name):
     return await trio.to_thread.run_sync(lambda: STORAGE_IMPL.get(bucket, name))
 
-
+"""
+    处理文档任务,  将其分割成多个块(chunks),  并执行一系列操作,  如生成关键词、问题和标签
+        task: 一个字典,  包含任务的详细信息,  如文档ID、存储位置、页码范围等。
+        progress_callback: 一个回调函数,  用于更新任务的进度。
+"""
 async def build_chunks(task, progress_callback):
     if task["size"] > DOC_MAXIMUM_SIZE:
         set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" %
-                                              (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
+                                            (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
         return []
 
-    chunker = FACTORY[task["parser_id"].lower()]
+    chunker = FACTORY[task["parser_id"].lower()] # 任务的解析器ID(task["parser_id"])从 FACTORY 中获取对应的块生成器
     try:
-        st = timer()
+        st = timer() # 从存储桶中获取文件的二进制内容
         bucket, name = File2DocumentService.get_storage_address(doc_id=task["doc_id"])
         binary = await get_storage_binary(bucket, name)
         logging.info("From minio({}) {}/{}".format(timer() - st, task["location"], task["name"]))
@@ -251,7 +265,7 @@ async def build_chunks(task, progress_callback):
         raise
 
     try:
-        async with chunk_limiter:
+        async with chunk_limiter: # 使用块生成器生成块
             cks = await trio.to_thread.run_sync(lambda: chunker.chunk(task["name"], binary=binary, from_page=task["from_page"],
                                 to_page=task["to_page"], lang=task["language"], callback=progress_callback,
                                 kb_id=task["kb_id"], parser_config=task["parser_config"], tenant_id=task["tenant_id"]))
@@ -271,7 +285,7 @@ async def build_chunks(task, progress_callback):
     if task["pagerank"]:
         doc[PAGERANK_FLD] = int(task["pagerank"])
     el = 0
-    for ck in cks:
+    for ck in cks: # 遍历生成的块,  为每个块创建一个文档字典d
         d = copy.deepcopy(doc)
         d.update(ck)
         d["id"] = xxhash.xxh64((ck["content_with_weight"] + str(d["doc_id"])).encode("utf-8")).hexdigest()
@@ -302,7 +316,7 @@ async def build_chunks(task, progress_callback):
         del d["image"]
         docs.append(d)
     logging.info("MINIO PUT({}):{}".format(task["name"], el))
-
+    # 生成关键字、问题、标签
     if task["parser_config"].get("auto_keywords", 0):
         st = timer()
         progress_callback(msg="Start to generate keywords for every chunk ...")
@@ -379,7 +393,7 @@ async def build_chunks(task, progress_callback):
             if cached:
                 set_llm_cache(chat_mdl.llm_name, d["content_with_weight"], cached, all_tags, {"topn": topn_tags})
                 d[TAG_FLD] = json.loads(cached)
-        async with trio.open_nursery() as nursery:
+        async with trio.open_nursery() as nursery: # 异步上下文管理器,  用于管理并发任务执行
             for d in docs_to_tag:
                 nursery.start_soon(doc_content_tagging, chat_mdl, d, topn_tags)
         progress_callback(msg="Tagging {} chunks completed in {:.2f}s".format(len(docs), timer() - st))
@@ -426,7 +440,7 @@ async def embedding(docs, mdl, parser_config=None, callback=None):
 
     title_w = float(parser_config.get("filename_embd_weight", 0.1))
     vects = (title_w * tts + (1 - title_w) *
-             cnts) if len(tts) == len(cnts) else cnts
+            cnts) if len(tts) == len(cnts) else cnts
 
     assert len(vects) == len(docs)
     vector_size = 0
@@ -441,7 +455,7 @@ async def run_raptor(row, chat_mdl, embd_mdl, vector_size, callback=None):
     chunks = []
     vctr_nm = "q_%d_vec"%vector_size
     for d in settings.retrievaler.chunk_list(row["doc_id"], row["tenant_id"], [str(row["kb_id"])],
-                                             fields=["content_with_weight", vctr_nm]):
+                                            fields=["content_with_weight", vctr_nm]):
         chunks.append((d["content_with_weight"], np.array(d[vctr_nm])))
 
     raptor = Raptor(
@@ -477,7 +491,8 @@ async def run_raptor(row, chat_mdl, embd_mdl, vector_size, callback=None):
         tk_count += num_tokens_from_string(content)
     return res, tk_count
 
-
+# Task执行的具体处理函数
+# 写入elasticsearch的索引
 async def do_handle_task(task):
     task_id = task["id"]
     task_from_page = task["from_page"]
@@ -493,6 +508,7 @@ async def do_handle_task(task):
     task_start_ts = timer()
 
     # prepare the progress callback function
+    # 等价于调用set_progress(),  并补充几个参数
     progress_callback = partial(set_progress, task_id, task_from_page, task_to_page)
 
     # FIXME: workaround, Infinity doesn't support table parsing method, this check is to notify user
@@ -587,8 +603,8 @@ async def do_handle_task(task):
             doc_store_result = await trio.to_thread.run_sync(lambda: settings.docStoreConn.delete({"id": chunk_ids}, search.index_name(task_tenant_id), task_dataset_id))
             return
     logging.info("Indexing doc({}), page({}-{}), chunks({}), elapsed: {:.2f}".format(task_document_name, task_from_page,
-                                                                                     task_to_page, len(chunks),
-                                                                                     timer() - start_ts))
+                                                                                    task_to_page, len(chunks),
+                                                                                    timer() - start_ts))
 
     DocumentService.increment_chunk_num(task_doc_id, task_dataset_id, token_count, chunk_count, 0)
 
@@ -597,14 +613,15 @@ async def do_handle_task(task):
     progress_callback(prog=1.0, msg="Indexing done ({:.2f}s). Task done ({:.2f}s)".format(time_cost, task_time_cost))
     logging.info(
         "Chunk doc({}), page({}-{}), chunks({}), token({}), elapsed:{:.2f}".format(task_document_name, task_from_page,
-                                                                                   task_to_page, len(chunks),
-                                                                                   token_count, task_time_cost))
-
-
+                                                                                task_to_page, len(chunks),
+                                                                                token_count, task_time_cost))
+"""
+    处理从消息队列中获取的任务。它记录任务的处理过程,  并在任务完成或失败时更新相应的计数器
+"""
 async def handle_task():
-    global DONE_TASKS, FAILED_TASKS
-    redis_msg, task = await collect()
-    if not task:
+    global DONE_TASKS, FAILED_TASKS  # 完成和失败的任务计数器
+    redis_msg, task = await collect() # 调用异步函数 collect(),  从消息队列中获取一个任务
+    if not task:  # 每5秒检查是否有新或末完成的任务
         await trio.sleep(5)
         return
     try:
@@ -612,21 +629,21 @@ async def handle_task():
         CURRENT_TASKS[task["id"]] = copy.deepcopy(task)
         await do_handle_task(task)
         DONE_TASKS += 1
-        CURRENT_TASKS.pop(task["id"], None)
+        CURRENT_TASKS.pop(task["id"], None) # 从当前任务列表中删除已完成的任务
         logging.info(f"handle_task done for task {json.dumps(task)}")
     except Exception as e:
         FAILED_TASKS += 1
         CURRENT_TASKS.pop(task["id"], None)
         try:
             err_msg = str(e)
-            while isinstance(e, exceptiongroup.ExceptionGroup):
+            while isinstance(e, BaseExceptionGroup.ExceptionGroup):
                 e = e.exceptions[0]
                 err_msg += ' -- ' + str(e)
             set_progress(task["id"], prog=-1, msg=f"[Exception]: {err_msg}")
         except Exception:
             pass
         logging.exception(f"handle_task got exception for task {json.dumps(task)}")
-    redis_msg.ack()
+    redis_msg.ack() # 确认消息已经被处理
 
 
 async def report_status():
